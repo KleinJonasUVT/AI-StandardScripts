@@ -2,6 +2,20 @@ import time
 import os
 import requests
 from bs4 import BeautifulSoup
+import pymysql
+
+def connect_to_db():
+    connection = pymysql.connect(
+        host = "gateway01.eu-central-1.prod.aws.tidbcloud.com",
+        port = 4000,
+        user = os.environ.get("TIDB_USER"),
+        password = os.environ.get("TIDB_PASSWORD"),
+        database = "ragdocuments",
+        ssl_verify_cert = True,
+        ssl_verify_identity = True,
+        ssl_ca = os.environ.get("SSL_CA")
+        )
+    return connection
 
 # Define the initial URL
 url = 'https://francescolelli.info/news/'
@@ -38,13 +52,16 @@ while True:
 for i, href in enumerate(hrefs):
     response = requests.get(href)
     soup = BeautifulSoup(response.content, 'html.parser')
-    content = soup.find('div', id='content')
+    # Find the content of the article and strip text
+    content = soup.find('div', id='content').get_text().strip()
+    connection = connect_to_db()
     with connection.cursor() as cursor:
             sql = """
-                INSERT INTO ragdocuments.odcm (parts, source, page, author) VALUES (%s, %s, %s, %s);
+                INSERT INTO ragdocuments.lelli_web (source, parts, author) VALUES (%s, %s, %s);
                 """
-            cursor.execute(sql, (doc, "FieldsOfGold.pdf", i + 1, "Johannes Boegershausen, Hannes Datta, Abhishek Borah and Andrew T. Stephen"))
+            cursor.execute(sql, (href, content, "Francesco Lelli"))
             connection.commit()
+            print(f"Inserted article {i + 1}/{len(hrefs)} into the database.")
 
     # Sleep for a while to avoid overwhelming the server
     time.sleep(1)
