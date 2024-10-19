@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View this PDF and Video</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <style>
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid black;
+        }
+        .accordion {
+            background-color: #eee;
+            color: #444;
+            cursor: pointer;
+            padding: 15px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 18px;
+            transition: 0.4s;
+        }
+        .active, .accordion:hover {
+            background-color: #ccc;
+        }
+        .panel {
+            padding: 0 15px;
+            display: none;
+            background-color: white;
+            overflow: hidden;
+        }
+        #pdf-container {
+            width: 100%;
+            height: 600px;
+            overflow: auto;
+            border: 1px solid black;
+        }
+        canvas {
+            display: block;
+            margin: 10px auto;
+        }
+        .button-container {
+            margin: 20px 0;
+        }
+        .button-container button {
+            margin-right: 10px;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            margin: 20px 0;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- PDF Accordion -->
+    <button class="accordion">View this PDF</button>
+    <div class="panel">
+        <div class="button-container">
+            <button id="download-pdf">Download PDF</button>
+            <button id="open-pdf">Open PDF in New Tab</button>
+        </div>
+        <div id="pdf-container"></div>
+    </div>
+
+    <!-- Video Accordion -->
+    <button class="accordion">Watch this Video</button>
+    <div class="panel">
+        <video id="video-player" controls>
+            <source src="/get-video" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <!-- Another PDF Accordion Example -->
+    <h2>PDF in Accordion Example</h2>
+    <button class="accordion2">Open PDF</button>
+    <div class="panel">
+        <iframe id="pdfFrame" src="" width="100%" height="600px"></iframe>
+    </div>
+
+    <script>
+        // Accordion functionality for the PDF and Video
+        const accordions = document.querySelectorAll('.accordion');
+        accordions.forEach((accordion, index) => {
+            const panel = accordion.nextElementSibling;
+            accordion.addEventListener('click', function() {
+                this.classList.toggle('active');
+                if (panel.style.display === 'block') {
+                    panel.style.display = 'none';
+                } else {
+                    // Close other open accordions if needed
+                    accordions.forEach((acc, i) => {
+                        if (i !== index) {
+                            acc.classList.remove('active');
+                            acc.nextElementSibling.style.display = 'none';
+                        }
+                    });
+
+                    panel.style.display = 'block';
+
+                    // Load PDF if it's the PDF accordion
+                    if (index === 0) {
+                        loadPdf();
+                    }
+                }
+            });
+        });
+
+        // Load the PDF from the backend securely
+        const pdfUrl = '/get-pdf?' + new Date().getTime();  // Cache-busting query parameter
+        const desiredPage = 5;  // Change to the specific page you want to show
+
+        // Add download and open functionality
+        document.getElementById('download-pdf').addEventListener('click', function() {
+            window.open(pdfUrl, '_blank');
+        });
+
+        document.getElementById('open-pdf').addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = 'document.pdf';
+            link.click();
+        });
+
+        // Load the PDF document and render inside the container
+        function loadPdf() {
+            pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+                // Log the number of pages
+                console.log('Number of pages in the PDF:', pdf.numPages);
+
+                const pdfContainer = document.getElementById('pdf-container');
+                pdfContainer.innerHTML = '';
+
+                // Render all pages
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    pdf.getPage(pageNum).then(function(page) {
+                        const scale = 1.5;
+                        const viewport = page.getViewport({ scale: scale });
+
+                        // Create a canvas for each page
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        pdfContainer.appendChild(canvas);
+
+                        // Render the page into the canvas context
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+                        page.render(renderContext).promise.then(() => {
+                            console.log(`Page ${pageNum} rendered successfully.`);
+                            // Scroll to the desired page after it is rendered
+                            if (pageNum === desiredPage) {
+                                canvas.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }).catch((renderError) => {
+                            console.error("Error rendering page:", renderError);
+                        });
+                    }).catch((pageError) => {
+                        console.error("Error getting page:", pageError);
+                    });
+                }
+            }).catch(function(error) {
+                console.error('Error loading PDF: ', error);
+            });
+        }
+
+        function setVideoStartTime() {
+            const video = document.getElementById('video-player');
+            const startTime = 500;  // The start time in seconds
+
+            // Wait for the video metadata to load before setting the time
+            video.addEventListener('loadedmetadata', function() {
+                // Ensure the video's duration is greater than the start time
+                if (video.duration > startTime) {
+                    video.currentTime = startTime;
+                } else {
+                    console.warn('Start time exceeds video duration.');
+                }
+            });
+        }
+
+        // Call the function after the DOM content is loaded
+        document.addEventListener('DOMContentLoaded', setVideoStartTime);
+
+        var acc = document.getElementsByClassName("accordion2");
+        var i;
+
+        for (i = 0; i < acc.length; i++) {
+            acc[i].addEventListener("click", function() {
+                /* Toggle between adding and removing the "active" class,
+                to highlight the button that controls the panel */
+                this.classList.toggle("active");
+
+                /* Toggle between hiding and showing the active panel */
+                var panel = this.nextElementSibling;
+                if (panel.style.display === "block") {
+                    panel.style.display = "none";
+                    // Clear the iframe src to stop loading the PDF when accordion is closed
+                    document.getElementById("pdfFrame").src = "";
+                } else {
+                    panel.style.display = "block";
+                    // Load the PDF only when the accordion is opened
+                    document.getElementById("pdfFrame").src = "/static/files/document.pdf#page=3";
+                }
+            });
+        }
+    </script>    
+</body>
+</html>
+

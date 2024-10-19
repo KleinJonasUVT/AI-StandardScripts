@@ -10,37 +10,37 @@ pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
 client = OpenAI(api_key=os.environ.get("general_API"))
 
 # Define the text and source
-text = """Contents of the first week of the Online Data Collection and Management course.
-The first week has the following content:
-The document outlines information related to the "Online Data Collection and Management" course, specifically focusing on the first week's topic: "Getting started with Python and web data." 
+text = """
+This image presents a **methodological framework for collecting web data**. It is structured as an inverted funnel that represents a balance between two key aspects: **technical feasibility** and **legal and ethical risks**. The ultimate goal is to ensure the **validity** of the data collection process.
 
-**Learning Goals:** 
-- Participants are expected to familiarize themselves with Python programming.
-- They will learn how to launch Jupyter Notebook and run code in Visual Studio Code.
-- The course addresses when it is beneficial to use Google Colab in comparison to Jupyter Notebook.
-- Basic programming concepts in Python relevant to web data collection will be covered.
+The framework is divided into three main stages:
 
-**Preparation Before the Lecture:** 
-- Students must ensure they complete all required preparations, including installing necessary software using Datacamp licenses prior to attending the lecture.
+1. **Source Selection** (Table 2):
+   - This stage involves choosing which data sources to use.
+   - Key questions to consider:
+     - **Has the universe of potential data sources been sufficiently explored?** (#1.1)
+     - **Have alternatives to web scraping been considered?** (#1.2)
+     - **Have the complexities of the data context been sufficiently mapped?** (#1.3)
 
-**Lecture Requirements:**
-- A laptop is required for participation.
-- The lecture will include an introduction to the course and a tutorial titled "Python bootcamp for web data," available for download and through Google Colab.
+2. **Collection Design** (Table 3):
+   - This stage focuses on designing how data will be collected from the selected sources.
+   - Key questions to consider:
+     - **Which information to extract?** (#2.1)
+     - **How to sample?** (#2.2)
+     - **At what frequency to extract information?** (#2.3)
+     - **How to process the information during extraction?** (#2.4)
 
-**Downloading and Starting the Tutorial:**
-- Instructions for downloading the tutorial involve right-clicking a link, selecting the appropriate download option, and saving the file in a convenient location.
-- If the downloaded file is in a compressed format (.zip), it must be unzipped.
-- Participants should then open Jupyter Notebook, navigate to their saved file, and begin the tutorial.
+3. **Data Extraction** (Table 4):
+   - This stage deals with the actual process of extracting data and ensuring its quality.
+   - Key questions to consider:
+     - **How to improve the performance of the extraction?** (#3.1)
+     - **How to monitor data quality during extraction?** (#3.2)
+     - **How to document the data during and after extraction?** (#3.3)
 
-**After the Lecture:**
-- Students are encouraged to work through the in-class tutorial at their own pace.
-- They should continue to enhance their understanding of basic programming concepts by completing online tutorials on Datacamp, which is estimated to take around three hours, focusing on the first three chapters only.
-
-**Premium Access to Datacamp:**
-- The document notes that students can access premium content from Datacamp through their university email accounts, providing an opportunity to utilize resources typically reserved for paid subscriptions.
-
-This comprehensive overview ensures that students have the necessary context and instructions to engage with the course effectively."""
-source = "Week 1) Getting started _ Online Data Collections (oDCM).pdf"
+The framework's objective is to ensure that the process of collecting web data is methodologically sound, legally and ethically compliant, and technically feasible, leading to valid results.
+"""
+source = "FieldsOfGold.pdf"
+page = "6"
 
 # Make embeddings for the text
 def get_text_embedding(text):
@@ -61,11 +61,11 @@ index_name = "odcm"
 index = pc.Index(index_name)
 
 # Insert the embedding into Pinecone
-def insert_to_pinecone(index, embedding, text, source):
+def insert_to_pinecone(index, embedding, text, source, page):
     # Prepare the metadata
     metadata = {
         "text": text,
-        "page": "",
+        "page": page,
         "author": "Hannes Datta",
         "source": source
     }
@@ -74,5 +74,5 @@ def insert_to_pinecone(index, embedding, text, source):
     index.upsert(vectors=[{"id": str(uuid.uuid4()), "values": embedding, "metadata": metadata}])
 
 # Insert the embedding and metadata
-insert_to_pinecone(index, embedding, text, source)
+insert_to_pinecone(index, embedding, text, source, page)
 print("Text embedding inserted into Pinecone successfully!")
